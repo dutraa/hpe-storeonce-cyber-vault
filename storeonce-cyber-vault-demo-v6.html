@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StoreOnce cyber vault demo</title>
+<style>
+:root{
+  --bg:#292D3A; --deep:#1D202B; --panel:#323849; --line:#4D556B;
+  --g1:#01A982; --g2:#05CC93; --txt:#EAEEF4; --mut:#9AA4B8;
+  --red:#FF5C5C; --amb:#FFBC44;
+  --font:"HPE Graphik","Graphik","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--txt);font-family:var(--font);font-weight:400}
+body{min-height:100vh;padding:18px 26px 26px;background:
+  radial-gradient(1100px 520px at 72% -8%,rgba(1,169,130,.16),transparent 62%),
+  radial-gradient(900px 500px at 0% 100%,rgba(5,204,147,.06),transparent 60%),var(--bg)}
+.wrap{max-width:1400px;margin:0 auto}
+button{font-family:var(--font)}
+:focus-visible{outline:2px solid var(--g2);outline-offset:3px}
+
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:14px}
+.mark{width:34px;height:12px;background:var(--g2);box-shadow:0 0 18px rgba(5,204,147,.7)}
+h1{margin:0;font-size:26px;font-weight:700;color:var(--g2);letter-spacing:-.01em}
+.sub{color:var(--mut);font-weight:300;font-size:14px;margin-top:2px}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.lbl{color:var(--mut);font-size:13px;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--txt);border:0;padding:8px 15px;font-size:14px;font-weight:600;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:rgba(1,169,130,.16)}
+.seg button.on{background:var(--g1);color:#0e1a16}
+.link{background:none;border:0;color:var(--mut);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.link.on{color:var(--g2)}
+
+/* progress through the scenario */
+.track{display:flex;margin:16px 0 10px;gap:6px}
+.track button{flex:1;background:none;border:0;padding:0;cursor:pointer;text-align:left;color:var(--mut);font-size:14px;font-weight:600}
+.track button i{display:block;height:4px;border-radius:2px;background:var(--line);margin-bottom:8px;transition:background .4s,box-shadow .4s}
+.track button.done i{background:var(--g1)}
+.track button.on{color:var(--g2)} .track button.on i{background:var(--g2);box-shadow:0 0 12px rgba(5,204,147,.8)}
+.track button.on.red{color:var(--red)} .track button.on.red i{background:var(--red);box-shadow:0 0 12px rgba(255,92,92,.8)}
+
+/* telemetry rail */
+.rail{display:grid;grid-template-columns:repeat(5,1fr) 1.7fr;border:1px solid var(--line);border-radius:12px;background:rgba(29,32,43,.7);overflow:hidden}
+.rail>div{padding:11px 16px;border-right:1px solid var(--line);min-width:0}
+.rail>div:last-child{border-right:0}
+.rail .k{color:var(--mut);font-size:12px;font-weight:600}
+.rail .v{font-size:23px;font-weight:700;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--g2);transition:color .3s}
+.rail .s{color:var(--mut);font-size:12px;font-weight:300;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail .warn .v{color:var(--amb)} .rail .bad .v{color:var(--red)} .rail .idle .v{color:var(--txt)}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-top:7px;overflow:hidden}
+.bar b{display:block;height:100%;width:0;background:var(--amb)}
+@media(max-width:1000px){.rail{grid-template-columns:repeat(3,1fr)}.rail>div{border-bottom:1px solid var(--line)}}
+@media(max-width:600px){.rail{grid-template-columns:repeat(2,1fr)}}
+
+.stagebox{position:relative;margin-top:12px;border:1px solid var(--line);border-radius:14px;background:var(--deep);overflow:hidden}
+svg{width:100%;height:auto;display:block}
+.tag{position:absolute;right:16px;bottom:10px;font-size:12px;color:var(--mut);font-weight:300}
+
+.cap{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;margin-top:16px}
+@media(max-width:850px){.cap{grid-template-columns:1fr}}
+.kick{color:var(--mut);font-size:13px;font-weight:600}
+h2{margin:2px 0 6px;font-size:30px;font-weight:700;color:var(--txt);letter-spacing:-.015em}
+.cap p{margin:0;font-size:18px;line-height:1.5;font-weight:300;max-width:760px}
+.cap p.note{margin-top:10px;color:var(--mut);font-size:15px;font-weight:400;border-left:3px solid var(--g1);padding-left:12px}
+.views{margin-top:12px;display:none;gap:10px;align-items:center}
+.actions{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:290px}
+.cta{background:var(--g1);color:#0c1814;border:0;border-radius:10px;padding:17px 26px;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 0 26px rgba(1,169,130,.45);transition:background .2s,transform .15s}
+.cta:hover{background:var(--g2);transform:translateY(-1px)}
+.cta.red{background:var(--red);box-shadow:0 0 26px rgba(255,92,92,.45);color:#240c0c}
+.cta.red:hover{background:#ff7676}
+.row2{display:flex;gap:10px}
+.ghost{flex:1;background:transparent;color:var(--g2);border:1px solid var(--g1);border-radius:8px;padding:9px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.ghost:hover{background:rgba(1,169,130,.15)} .ghost[disabled]{opacity:.35;cursor:default}
+footer{margin-top:14px;color:var(--mut);font-size:12px;font-weight:300}
+
+/* ---------- stage ---------- */
+.gridline{stroke:rgba(255,255,255,.035);stroke-width:1}
+.zone{fill:rgba(255,255,255,.015);stroke:var(--line);stroke-width:2;stroke-dasharray:3 7;stroke-linecap:round}
+.zoneg{stroke:rgba(5,204,147,.75)}
+.zt{fill:var(--txt);font:700 26px var(--font)} .ztg{fill:var(--g2)}
+.pillbg{fill:var(--deep);stroke:var(--line);stroke-width:1.5}
+.pilltx{fill:var(--mut);font:600 13px var(--font)}
+.gapline{stroke:var(--g2);stroke-width:3;stroke-dasharray:14 10;animation:dash 1.8s linear infinite;filter:drop-shadow(0 0 5px rgba(5,204,147,.8))}
+@keyframes dash{to{stroke-dashoffset:-24}}
+.node>rect{fill:var(--panel);stroke:var(--line);stroke-width:2;transition:stroke .5s,fill .5s}
+.nopt>rect{stroke-dasharray:6 5}
+.chipx{fill:rgba(5,204,147,.12);stroke:var(--g1);stroke-width:1.2} .chiptx{fill:var(--txt);font:600 11px var(--font)}
+.nt{fill:var(--txt);font:700 15px var(--font)} .ns{fill:var(--mut);font:300 13px var(--font)} .nv{fill:var(--g2);font:700 20px var(--font)}
+.node>rect.blk,.node rect.blk{fill:url(#gg);stroke:none;filter:drop-shadow(0 0 10px rgba(5,204,147,.35))}
+.node>rect.blkd,.node rect.blkd{fill:#14171F;stroke:var(--g2);stroke-width:2}
+.bt{fill:#0c1814;font:700 17px var(--font)} .btd{fill:var(--g2);font:700 17px var(--font)}
+.cp{fill:var(--mut);font:600 12px var(--font)}
+.wire{fill:none;stroke:var(--line);stroke-width:2.5}
+.wire.d{stroke-dasharray:7 6}
+.srv{fill:rgba(255,255,255,.04);stroke:var(--mut);stroke-width:2;transition:stroke .5s}
+.drv{fill:rgba(5,204,147,.16);stroke:var(--g2);stroke-width:2.2;transition:stroke .5s,fill .5s}
+.vdrv{fill:rgba(5,204,147,.2)}
+.lk{fill:var(--g2)}
+.fwbar{fill:rgba(5,204,147,.14);stroke:var(--g2);stroke-width:2.5;transition:stroke .2s,fill .2s}
+.fwt{fill:var(--g2);font:700 17px var(--font);letter-spacing:.08em}
+.vaultbox{fill:rgba(5,204,147,.05);stroke:var(--g2);stroke-width:2.5;stroke-dasharray:3 7;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(5,204,147,.45));animation:vpulse 3.4s ease-in-out infinite}
+@keyframes vpulse{50%{filter:drop-shadow(0 0 22px rgba(5,204,147,.8))}}
+
+.flow{opacity:0;transition:opacity .4s}
+.flow circle{fill:var(--g2);filter:drop-shadow(0 0 4px #05CC93)}
+.flow.c circle{fill:var(--amb);filter:drop-shadow(0 0 4px #FFBC44)}
+.flow.a circle{fill:var(--red);filter:drop-shadow(0 0 5px #FF5C5C)}
+#stage[data-flow~="wr"] .f-wr,#stage[data-flow~="pc"] .f-pc,#stage[data-flow~="pd"] .f-pd,
+#stage[data-flow~="atk"] .f-atk,#stage[data-flow~="imp"] .f-imp,#stage[data-flow~="rst"] .f-rst{opacity:1}
+
+/* port labels and gap lock */
+.plab{fill:var(--amb);font:600 12px var(--font);opacity:0;transition:opacity .4s}
+#stage[data-link="open"] .plab{opacity:1}
+.pwire{stroke:var(--line);stroke-width:2.5;stroke-dasharray:2 8;stroke-linecap:round;fill:none;transition:stroke .4s}
+#stage[data-link="open"] .pwire{stroke:var(--amb);stroke-dasharray:none}
+.glock .body{fill:var(--g2);transition:fill .4s}
+.glock .sh{fill:none;stroke:var(--g2);stroke-width:5;stroke-linecap:round;transition:stroke .4s,transform .5s;transform-origin:14px 0}
+.glock .halo{fill:rgba(5,204,147,.12);stroke:var(--g2);stroke-width:2;transition:stroke .4s,fill .4s}
+#stage[data-link="open"] .glock .body{fill:var(--amb)}
+#stage[data-link="open"] .glock .sh{stroke:var(--amb);transform:translateY(-9px) rotate(-22deg)}
+#stage[data-link="open"] .glock .halo{stroke:var(--amb);fill:rgba(255,188,68,.12)}
+.gltxt{fill:var(--g2);font:600 12px var(--font);transition:opacity .3s}
+.gl-open{opacity:0;fill:var(--amb)} #stage[data-link="open"] .gl-open{opacity:1} #stage[data-link="open"] .gl-closed{opacity:0}
+
+/* attack */
+.stamp{opacity:0}
+.stamp rect{fill:rgba(29,32,43,.94);stroke:var(--red);stroke-width:2.5}
+.stamp text{fill:var(--red);font:700 15px var(--font);letter-spacing:.12em}
+#stage[data-prod="infected"] .stamp{animation:stampin .4s var(--d) both;transform-box:fill-box;transform-origin:center}
+@keyframes stampin{from{opacity:0;transform:scale(2) rotate(-12deg)}to{opacity:1;transform:scale(1) rotate(-7deg)}}
+#stage[data-prod="infected"] .pn>rect:not(.blk){stroke:var(--red);fill:rgba(255,92,92,.1);transition-delay:var(--d)}
+#stage[data-prod="infected"] .pn rect.blk{fill:#8A2F3A;filter:drop-shadow(0 0 10px rgba(255,92,92,.45))}
+#stage[data-prod="infected"] .pn .bt{fill:#FFE3E3}
+#stage[data-prod="infected"] .pn .srv,#stage[data-prod="infected"] .pn .drv{stroke:var(--red);fill:rgba(255,92,92,.14);transition-delay:var(--d)}
+#stage[data-prod="infected"] .pn{animation:flick 1.3s steps(2,end) infinite;animation-delay:calc(var(--d) + .5s)}
+@keyframes flick{0%,86%{opacity:1}90%{opacity:.78}94%{opacity:1}97%{opacity:.85}}
+#stage[data-prod="infected"] .pwire-w{stroke:var(--red)}
+#stage[data-prod="infected"] .zone-p{stroke:var(--red);filter:drop-shadow(0 0 8px rgba(255,92,92,.5))}
+.scan{opacity:0}
+#stage[data-prod="infected"] .scan{opacity:.9;animation:scan 2.8s linear infinite}
+@keyframes scan{from{transform:translateX(-240px)}to{transform:translateX(760px)}}
+.safe{opacity:0;transition:opacity .6s .4s}
+#stage[data-prod="infected"] .safe{opacity:1}
+.safe text{fill:var(--g2);font:700 15px var(--font)}
+.rip{fill:none;stroke:var(--red);stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center}
+.rip.go{animation:rip .9s ease-out}
+@keyframes rip{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(7)}}
+#stage[data-fw="hit"] .fwbar{stroke:var(--red);fill:rgba(255,92,92,.3)}
+.denied{opacity:0;fill:var(--red);font:700 14px var(--font);transition:opacity .2s}
+#stage[data-mgmt="denied"] .denied{opacity:1}
+#stage[data-mgmt="denied"] #n-mgmt>rect{stroke:var(--red)}
+.xmark{opacity:0;transition:opacity .2s} #stage[data-fw="hit"] .xmark{opacity:1}
+.blocked{fill:var(--red);font:700 14px var(--font);opacity:0;transition:opacity .3s}
+#stage[data-fw="hit"] .blocked{opacity:1}
+#stage[data-atk="on"] .authdom{fill:var(--amb)}
+.authdom{fill:var(--mut);font:600 13px var(--font);transition:fill .3s}
+
+/* vault view toggle */
+.vin{transition:opacity .5s,filter .5s}
+#stage[data-view="prod"] .vin{opacity:.05;filter:blur(4px)}
+#stage[data-view="prod"] .vaultbox{opacity:.15}
+.pvmsg{opacity:0;fill:var(--amb);font:700 17px var(--font);transition:opacity .5s}
+#stage[data-view="prod"] .pvmsg{opacity:1}
+.rp4{opacity:0;transition:opacity .9s} #stage[data-rp4="1"] .rp4{opacity:1}
+#stage[data-rp4="1"] .rp4n{animation:rpn 1.4s ease-out}
+@keyframes rpn{from{filter:drop-shadow(0 0 0 #05CC93)}30%{filter:drop-shadow(0 0 14px #05CC93)}to{filter:none}}
+
+/* recovery */
+.restl{opacity:0}
+#stage[data-rec="1"] .restl{opacity:1} #stage[data-rec="1"] .restw{opacity:0}
+#stage[data-rec="1"] #n-rest>rect{stroke:var(--g2);fill:rgba(5,204,147,.16)}
+#stage[data-imp="1"] #n-sire>rect,#stage[data-imp="1"] #n-ire>rect{stroke:var(--g2)}
+#stage[data-imp="1"] #n-ire>rect{stroke-dasharray:none}
+#n-ire,#n-sire,#n-rest{transition:opacity .5s}
+#stage[data-imp="0"] #n-ire,#stage[data-imp="0"] #n-sire,#stage[data-imp="0"] #n-rest{opacity:.7}
+.jp{opacity:0;transition:opacity .6s}
+#stage[data-jrnl="1"] .jp:not(.jv){opacity:1}
+#stage[data-jrnl="1"][data-rp4="1"] .jv{opacity:1}
+.noin{fill:var(--g2);font:700 12px var(--font);opacity:0;transition:opacity .5s}
+#stage[data-atk="on"] .noin{opacity:1}
+.fn{position:absolute;left:16px;bottom:10px;max-width:68%;font-size:12px;color:var(--amb);font-weight:400}
+/* source modes: backup software (bk) or direct from array (ar) */
+#stage:not([data-mode="ar"]) .m-ar{display:none}
+#stage[data-mode="ar"] .m-bk{display:none}
+#stage[data-flow~="ah"] .f-ah{opacity:1}
+.plab{paint-order:stroke;stroke:#1D202B;stroke-width:4px;stroke-linejoin:round}
+#stage[data-rec="1"] #n-siem>rect{stroke:var(--g2);fill:rgba(5,204,147,.16);stroke-dasharray:none}
+#stage[data-imp="1"] #n-siem>rect{stroke:var(--g2);stroke-dasharray:none}
+#n-siem{transition:opacity .5s} #stage[data-imp="0"] #n-siem{opacity:.7}
+/* v6 */
+#stage[data-mode="sv"] .hide-sv,#stage[data-mode="oh"] .hide-oh{display:none}
+#stage:not([data-mode="oh"]) .lab-oh{display:none}
+#stage[data-mode="oh"] .lab-cat{display:none}
+#stage[data-mode="ar"] .glock,#stage[data-mode="ar"] .gltxt{display:none}
+.arr{fill:none;stroke-width:3;stroke-dasharray:10 7;opacity:0;transition:opacity .4s;animation:arrd 1.1s linear infinite}
+.arr.dat{stroke:var(--g2)} .arr.cmd{stroke:#6FB4FF}
+@keyframes arrd{to{stroke-dashoffset:-17}}
+.pl2{fill:var(--g2);font:600 10.5px var(--font);paint-order:stroke;stroke:#1D202B;stroke-width:4px;stroke-linejoin:round;opacity:0;transition:opacity .4s}
+.pl2.cm{fill:#8CC2FF}
+#stage[data-flow~="pull"] .a-pull,#stage[data-flow~="rec"] .a-rec,#stage[data-flow~="back"] .a-back{opacity:1}
+.arcap{fill:var(--mut);font:600 11px var(--font);opacity:0;transition:opacity .4s}
+#stage[data-mode="ar"] .ac-idle{opacity:1}
+#stage[data-mode="ar"][data-flow~="pull"] .ac-idle,#stage[data-mode="ar"][data-flow~="back"] .ac-idle{opacity:0}
+.ac-pull{fill:var(--g2)} #stage[data-flow~="pull"] .ac-pull{opacity:1}
+.svc{transition:opacity .7s} #stage[data-build="0"] .svc{opacity:0}
+#stage[data-rec="1"] #n-b1>rect{stroke:var(--g2);fill:rgba(5,204,147,.16);stroke-dasharray:none}
+#stage[data-imp="1"] #n-b1>rect,#stage[data-imp="1"] #n-ire2>rect{stroke:var(--g2)}
+#n-b1,#n-ire2{transition:opacity .5s} #stage[data-imp="0"] #n-b1,#stage[data-imp="0"] #n-ire2{opacity:.7}
+.corepos{fill:var(--g2);font:600 12px var(--font)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.flow{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="mark"></div>
+      <div><h1>HPE StoreOnce cyber vault</h1><div class="sub">Ransomware attack and isolated recovery, live</div></div>
+    </div>
+    <div class="tools">
+      <span class="lbl">Backup software</span><div class="seg" id="vendors"></div>
+      <span class="lbl">Storage-led protection</span><div class="seg" id="arrays"></div>
+      <button class="link" id="notes">Presenter notes</button>
+      <button class="link" id="auto">Auto-play</button>
+    </div>
+  </header>
+
+  <nav class="track" id="track" aria-label="Scenario progress"></nav>
+  <div class="rail" id="rail"></div>
+
+  <div class="stagebox">
+    <svg id="stage" viewBox="0 0 1400 650" role="img" aria-label="Production environment on the left, Isolated Recovery Environment (IRE) with StoreOnce cyber vault on the right, separated by an air gap"
+         data-mode="bk" data-link="closed" data-prod="ok" data-mgmt="sealed" data-flow="" data-rp4="0" data-view="vault" data-fw="" data-imp="0" data-rec="0" data-atk="off">
+      <defs>
+        <linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#01A982"/><stop offset="1" stop-color="#05CC93"/></linearGradient>
+        <linearGradient id="rg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FF5C5C" stop-opacity="0"/><stop offset=".85" stop-color="#FF5C5C" stop-opacity=".35"/><stop offset="1" stop-color="#FF5C5C" stop-opacity=".9"/></linearGradient>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path class="gridline" d="M40 0H0V40" fill="none"/></pattern>
+        <clipPath id="cp-prod"><rect x="20" y="60" width="660" height="540" rx="16"/></clipPath>
+        <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1a1 1 0 011 1v9a1 1 0 01-1 1H6a1 1 0 01-1-1v-9a1 1 0 011-1h1zm2 0h6V8a3 3 0 00-6 0v2z"/></symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.500 9-8 11-4.500-2-8-6-8-11V5l8-3z"/></symbol>
+        <symbol id="i-srv" viewBox="0 0 30 40"><rect x="2" y="2" width="26" height="36" rx="3"/><path d="M7 12h16M7 19h16"/><circle cx="8" cy="31" r="1.600"/></symbol>
+        <symbol id="i-drv" viewBox="0 0 40 52"><ellipse cx="20" cy="10" rx="17" ry="7"/><path d="M3 10v30c0 4 7.600 7 17 7s17-3 17-7V10"/><path d="M3 25c0 4 7.600 7 17 7s17-3 17-7" fill="none"/></symbol>
+        <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="#4D556B"/></marker>
+      <marker id="arwg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 1L9 5L0 9z" fill="#05CC93"/></marker>
+        <marker id="arwb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 1L9 5L0 9z" fill="#6FB4FF"/></marker>
+      </defs>
+      <rect width="1400" height="650" fill="url(#grid)"/>
+
+      <!-- zones -->
+      <rect class="zone zone-p" x="20" y="60" width="660" height="540" rx="16"/>
+      <rect class="zone zoneg" x="760" y="60" width="620" height="540" rx="16"/>
+      <text class="zt" x="350" y="100" text-anchor="middle">Production</text>
+      <text class="zt ztg" x="1070" y="100" text-anchor="middle">Isolated Recovery Environment (IRE)</text>
+      <text class="corepos" x="1070" y="584" text-anchor="middle">Separately controlled recovery copy. No vault credentials in production.</text>
+      <line class="gapline" x1="720" y1="34" x2="720" y2="620"/>
+      <g><rect class="pillbg" x="672" y="14" width="96" height="26" rx="13"/><text class="pilltx" x="720" y="32" text-anchor="middle">Air gap</text></g>
+
+      <g class="m-bk">
+      <!-- production wires -->
+      <path class="wire hide-sv" d="M205,310V340"/>
+      <path class="wire hide-sv hide-oh" d="M200,405H210"/>
+      <path id="p-wc" class="wire d pwire-w" d="M360,200H470"/>
+      <path id="p-wd" class="wire d pwire-w" d="M360,262H470"/>
+      <g class="lab-cat"><text class="cp" x="405" y="188" text-anchor="middle" style="font-size:11px">Catalyst cmds</text>
+      <text class="cp" x="405" y="217" text-anchor="middle" style="font-size:11px">Port 9387</text>
+      <text class="cp" x="405" y="250" text-anchor="middle" style="font-size:11px">Write data</text>
+      <text class="cp" x="405" y="279" text-anchor="middle" style="font-size:11px">Port 9388</text></g>
+      <g class="lab-oh"><text class="cp" x="405" y="226" text-anchor="middle" style="font-size:11px">Protected copy</text></g>
+
+      <!-- production nodes -->
+      <g class="node pn" id="n-bu" style="--d:1.6s">
+        <rect x="50" y="120" width="310" height="190" rx="14"/>
+        <text class="nt" id="t-bu" x="70" y="148">Backup software</text>
+        <text class="nv" id="v-bu" x="70" y="176">Commvault</text>
+        <use class="srv" href="#i-srv" x="70" y="204" width="30" height="40"/><use class="srv" href="#i-srv" x="108" y="204" width="30" height="40"/><use class="srv" href="#i-srv" x="146" y="204" width="30" height="40"/>
+        <rect class="blk" x="210" y="150" width="140" height="140" rx="10"/>
+        <text class="bt" id="cc1" x="280" y="214" text-anchor="middle">Catalyst</text><text class="bt" id="cc2" x="280" y="238" text-anchor="middle">Client</text>
+        <text class="bt" id="cc-sub" x="280" y="268" text-anchor="middle" style="font-size:11px;font-weight:600"></text>
+      </g>
+      <g class="node pn hide-sv" id="n-app" style="--d:0s">
+        <rect x="50" y="340" width="150" height="160" rx="14"/>
+        <text class="nt" x="125" y="368" text-anchor="middle">Application hosts</text>
+        <use class="srv" href="#i-srv" x="62" y="388" width="30" height="40"/><use class="srv" href="#i-srv" x="97" y="388" width="30" height="40"/><use class="srv" href="#i-srv" x="132" y="388" width="30" height="40"/>      </g>
+      <g class="node pn hide-sv hide-oh" id="n-stor" style="--d:.8s">
+        <rect x="210" y="340" width="150" height="160" rx="14"/>
+        <text class="nt" x="285" y="368" text-anchor="middle">Production storage</text>
+        <use class="drv" href="#i-drv" x="224" y="384" width="32" height="42"/><use class="drv" href="#i-drv" x="260" y="384" width="32" height="42"/><use class="drv" href="#i-drv" x="296" y="384" width="32" height="42"/>      </g>
+      <g class="node pn" id="n-so" style="--d:2.4s">
+        <rect x="450" y="120" width="210" height="350" rx="14"/>
+        <text class="nt" x="555" y="148" text-anchor="middle">HPE StoreOnce</text>
+        <rect class="blk" x="470" y="170" width="170" height="120" rx="10"/>
+        <text class="bt" x="555" y="224" text-anchor="middle">Catalyst</text><text class="bt" x="555" y="248" text-anchor="middle">Server</text>
+        <text class="ns" x="555" y="326" text-anchor="middle">Backups</text>
+        <use class="drv" href="#i-drv" x="480" y="342" width="36" height="46"/><use class="drv" href="#i-drv" x="537" y="342" width="36" height="46"/><use class="drv" href="#i-drv" x="594" y="342" width="36" height="46"/>
+        <g class="jp"><rect class="chipx" x="500" y="414" width="110" height="26" rx="13"/><text class="chiptx" x="555" y="431" text-anchor="middle">Journal copy</text></g>
+      </g>
+      <g class="stamp hide-sv" style="--d:.15s"><rect x="52" y="466" width="146" height="30" rx="4"/><text x="125" y="487" text-anchor="middle">COMPROMISED</text></g>
+      <g class="stamp hide-sv hide-oh" style="--d:.95s"><rect x="220" y="470" width="130" height="30" rx="4"/><text x="285" y="491" text-anchor="middle">ENCRYPTED</text></g>
+      <g class="stamp" style="--d:1.75s"><rect x="135" y="288" width="140" height="30" rx="4"/><text id="st-bu" x="205" y="309" text-anchor="middle">COMPROMISED</text></g>
+      <g class="stamp" style="--d:2.55s"><rect x="490" y="448" width="130" height="30" rx="4"/><text x="555" y="469" text-anchor="middle">ENCRYPTED</text></g>
+      </g>
+
+      <!-- production, direct from array (B10000, per final architecture slide) -->
+      <g class="m-ar">
+        <path id="p-ah" class="wire d pwire-w" d="M200,290H230"/>
+        <path class="wire d" d="M570,154V176"/>
+        <g class="node nopt" id="n-dscc">
+          <rect x="470" y="106" width="200" height="48" rx="12"/>
+          <text class="nt" x="570" y="127" text-anchor="middle">DSCC</text>
+          <text class="ns" x="570" y="145" text-anchor="middle" style="font-size:12px">Cloud or on-prem</text>
+        </g>
+        <g class="node pn" id="n-app-a" style="--d:0s">
+          <rect x="50" y="214" width="150" height="150" rx="14"/>
+          <text class="nt" x="125" y="242" text-anchor="middle">Application hosts</text>
+          <use class="srv" href="#i-srv" x="62" y="266" width="30" height="40"/><use class="srv" href="#i-srv" x="97" y="266" width="30" height="40"/><use class="srv" href="#i-srv" x="132" y="266" width="30" height="40"/>
+        </g>
+        <g class="node pn" id="n-arr" style="--d:.8s">
+          <rect x="230" y="176" width="410" height="250" rx="14"/>
+          <text class="nt" id="v-arr" x="435" y="200" text-anchor="middle">HPE B10000</text>
+          <g class="svc">
+            <rect class="blk" x="244" y="214" width="186" height="50" rx="8"/>
+            <text class="bt" x="337" y="235" text-anchor="middle" style="font-size:13px">Data Protection</text><text class="bt" x="337" y="252" text-anchor="middle" style="font-size:13px">UI</text>
+            <rect class="blk" x="440" y="214" width="186" height="50" rx="8"/>
+            <text class="bt" x="533" y="235" text-anchor="middle" style="font-size:13px">Volume</text><text class="bt" x="533" y="252" text-anchor="middle" style="font-size:13px">Presentation</text>
+            <rect class="blk" x="244" y="272" width="186" height="50" rx="8"/>
+            <text class="bt" x="337" y="293" text-anchor="middle" style="font-size:13px">Data Protection</text><text class="bt" x="337" y="310" text-anchor="middle" style="font-size:13px">Services</text>
+            <rect class="blk" x="440" y="272" width="186" height="50" rx="8"/>
+            <text class="bt" x="533" y="293" text-anchor="middle" style="font-size:13px">Recovery Point</text><text class="bt" x="533" y="310" text-anchor="middle" style="font-size:13px">Inventory</text>
+          </g>
+          <use class="drv" href="#i-drv" x="372" y="340" width="36" height="46"/><use class="drv" href="#i-drv" x="417" y="340" width="36" height="46"/><use class="drv" href="#i-drv" x="462" y="340" width="36" height="46"/>
+          <text class="ns" x="435" y="406" text-anchor="middle">Volumes and snapshots</text>
+        </g>
+        <g class="stamp" style="--d:.15s"><rect x="52" y="326" width="146" height="30" rx="4"/><text x="125" y="347" text-anchor="middle">COMPROMISED</text></g>
+        <g class="stamp" style="--d:.95s"><rect x="505" y="352" width="130" height="30" rx="4"/><text x="570" y="373" text-anchor="middle">ENCRYPTED</text></g>
+      </g>
+      <g clip-path="url(#cp-prod)"><rect class="scan" x="-100" y="60" width="240" height="540" fill="url(#rg)"/></g>
+
+      <!-- pull wires across the air gap -->
+      <g class="m-bk">
+      <path id="p-pc" class="pwire" d="M845,195H640"/>
+      <path id="p-pd" class="pwire" d="M640,272H845"/>
+      <text class="plab" x="700" y="180" text-anchor="middle">Cmds, port 9387</text>
+      <text class="plab" x="700" y="296" text-anchor="middle">Pulled copy, port 9388</text>
+      </g>
+      <g class="m-ar">
+      <path class="arr dat a-pull" d="M640,239H802" marker-end="url(#arwg)"/>
+      <path class="arr cmd a-pull" d="M802,290H640" marker-end="url(#arwb)"/>
+      <path class="arr cmd a-pull" d="M802,333H640" marker-end="url(#arwb)"/>
+      <text class="pl2 a-pull" x="720" y="229" text-anchor="middle">Data: iSCSI 3260</text>
+      <text class="pl2 cm a-pull" x="720" y="280" text-anchor="middle">Cmd: volume mount</text>
+      <text class="pl2 cm a-pull" x="720" y="323" text-anchor="middle">Cmd: REST / HTTPS 443</text>
+      <path class="arr dat a-back" d="M802,410H640" marker-end="url(#arwg)"/>
+      <text class="pl2 a-back" x="721" y="432" text-anchor="middle">Restore after validation,</text>
+      <text class="pl2 a-back" x="721" y="444" text-anchor="middle">no port opened</text>
+      <text class="arcap ac-idle" x="720" y="372" text-anchor="middle">Closed by iptables</text>
+      <text class="arcap ac-pull" x="720" y="372" text-anchor="middle">Vault-initiated</text>
+      </g>
+
+      <!-- gap lock -->
+      <g class="glock" transform="translate(720,350)">
+        <circle class="halo" r="34"/>
+        <path class="sh" d="M-9,-2V-10a9,9 0 0 1 18,0V-2" transform="translate(0,0)"/>
+        <rect class="body" x="-15" y="-3" width="30" height="24" rx="4" transform="translate(0,-4)"/>
+      </g>
+      <text class="gltxt gl-closed" x="720" y="432" text-anchor="middle" style="font-size:11px">Port disabled</text>
+      <text class="gltxt gl-open" x="720" y="432" text-anchor="middle" style="font-size:11px">Window open</text>
+
+      <!-- attack path -->
+      <path id="p-atk" d="M660,400H775" fill="none" stroke="#FF5C5C" stroke-width="3" stroke-dasharray="7 6" opacity="0" class="atkw"/>
+
+      <!-- firewall -->
+      <g id="fw">
+        <rect class="fwbar" x="800" y="120" width="30" height="350" rx="9"/>
+        <text class="fwt" transform="translate(821,295) rotate(-90)" text-anchor="middle" style="font-size:14px;letter-spacing:.03em">Firewall: StoreOnce iptables</text>
+        <circle class="rip" id="rip" cx="778" cy="400" r="7"/>
+        <g class="xmark"><circle cx="778" cy="400" r="14" fill="#FF5C5C"/><path d="M772,394L784,406M784,394L772,406" stroke="#1D202B" stroke-width="3.500" stroke-linecap="round"/></g>
+        <text class="noin" x="720" y="462" text-anchor="middle">No inbound</text><text class="noin" x="720" y="476" text-anchor="middle">connections</text>
+      </g>
+
+      <!-- vault, backup software view -->
+      <g class="m-bk">
+      <rect class="vaultbox" x="830" y="120" width="230" height="380" rx="14"/>
+            <g class="node vin">
+        <text class="nt" x="945" y="152" text-anchor="middle" style="font-size:15px">HPE StoreOnce cyber vault</text>
+        <rect class="blkd" x="845" y="170" width="200" height="66" rx="10"/>
+        <text class="btd" x="945" y="210" text-anchor="middle">Catalyst Server</text>
+        <rect class="blk" x="845" y="248" width="200" height="66" rx="10"/>
+        <text class="bt" x="945" y="287" text-anchor="middle" style="font-size:15px">Scheduled Vault Copy</text>
+        <text class="ns" x="945" y="344" text-anchor="middle">Backups</text>
+        <g>
+          <use class="drv vdrv" href="#i-drv" x="852" y="356" width="34" height="44"/><use class="lk" href="#i-lock" x="861" y="372" width="16" height="16"/>
+          <use class="drv vdrv" href="#i-drv" x="900" y="356" width="34" height="44"/><use class="lk" href="#i-lock" x="909" y="372" width="16" height="16"/>
+          <use class="drv vdrv" href="#i-drv" x="948" y="356" width="34" height="44"/><use class="lk" href="#i-lock" x="957" y="372" width="16" height="16"/>
+          <g class="rp4"><g class="rp4n"><use class="drv vdrv" href="#i-drv" x="996" y="356" width="34" height="44" style="stroke:#fff"/><use class="lk" href="#i-lock" x="1005" y="372" width="16" height="16"/></g></g>
+        </g>
+        <text class="ns" x="945" y="436" text-anchor="middle">Encrypted and immutable</text>
+        <text class="ns" x="945" y="456" text-anchor="middle">Locked by retention policy</text>
+        <g class="jp jv"><rect class="chipx" x="860" y="466" width="170" height="24" rx="12"/><text class="chiptx" x="945" y="482" text-anchor="middle">Journal catalog</text></g>
+      </g>
+      <text class="pvmsg" x="945" y="318" text-anchor="middle">No recovery points</text>
+      <text class="pvmsg" x="945" y="342" text-anchor="middle" style="font-size:14px;font-weight:400">visible from production</text>
+      <g class="safe"><use href="#i-shield" x="868" y="512" width="22" height="22" fill="#05CC93"/><text x="900" y="530">Unaffected</text></g>
+
+      <!-- right column -->
+      <path id="p-imp" class="wire d" d="M1060,226H1177" marker-end="url(#arw)"/>
+      <text class="cp" id="imp-lbl" x="1112" y="214" text-anchor="middle" style="font-size:11px">Import catalogue</text>
+      <path id="p-rst" class="wire d" d="M1265,272V290" marker-end="url(#arw)"/>
+      <path id="p-mg" class="wire d" d="M1165,455H1062" marker-end="url(#arw)"/>
+      <text class="cp" x="1113" y="436" text-anchor="middle" style="font-size:11px">Vault</text><text class="cp" x="1113" y="449" text-anchor="middle" style="font-size:11px">management</text>
+
+      <!-- REVERT NOTE: v3 drew two separate boxes here, "Clean room (optional)" and "Backup software (optional SIRE)".
+           v4 merges them into one Secure IRE container per PM feedback. To go back, take that layout from storeonce-cyber-vault-demo-v3.html. -->
+      <g class="node nopt" id="n-ire">
+        <rect x="1165" y="120" width="200" height="268" rx="14"/>
+        <text class="nt" x="1265" y="146" text-anchor="middle">Secure IRE</text>
+        <text class="ns" x="1265" y="164" text-anchor="middle">(Optional)</text>
+      </g>
+      <g class="node" id="n-sire">
+        <rect x="1177" y="180" width="176" height="92" rx="10"/>
+        <text class="nt" id="t-sire" x="1265" y="203" text-anchor="middle" style="font-size:14px">Backup software</text>
+        <text class="nv" id="v-sire" x="1265" y="226" text-anchor="middle" style="font-size:16px">Zerto</text>
+        <use class="srv" href="#i-srv" x="1254" y="236" width="22" height="30"/>
+      </g>
+      <g class="node" id="n-rest">
+        <rect x="1177" y="290" width="176" height="84" rx="10"/>
+        <text class="nt" x="1265" y="314" text-anchor="middle" style="font-size:14px">Workloads</text>
+        <text class="ns restw" x="1265" y="342" text-anchor="middle">Awaiting recovery</text>
+        <text class="nv restl" x="1265" y="342" text-anchor="middle" style="font-size:15px">Restored</text>
+      </g>
+      </g>
+
+      <!-- vault, direct from array view -->
+      <g class="m-ar">
+        <rect class="vaultbox" x="830" y="170" width="260" height="350" rx="14"/>
+        <g class="node vin">
+          <text class="nt" x="960" y="203" text-anchor="middle" style="font-size:14px">HPE StoreOnce cyber vault</text>
+          <g class="svc">
+            <rect class="blk" x="842" y="214" width="114" height="50" rx="8"/>
+            <text class="bt" x="899" y="235" text-anchor="middle" style="font-size:12px">Data Mover</text><text class="bt" x="899" y="252" text-anchor="middle" style="font-size:10.5px">(Catalyst client)</text>
+            <rect class="blk" x="964" y="214" width="114" height="50" rx="8"/>
+            <text class="bt" x="1021" y="235" text-anchor="middle" style="font-size:12px">Catalyst</text><text class="bt" x="1021" y="252" text-anchor="middle" style="font-size:12px">server</text>
+            <rect class="blk" x="842" y="272" width="114" height="50" rx="8"/>
+            <text class="bt" x="899" y="302" text-anchor="middle" style="font-size:12px">Scheduler</text>
+            <rect class="blk" x="964" y="272" width="114" height="50" rx="8"/>
+            <text class="bt" x="1021" y="293" text-anchor="middle" style="font-size:12px">Data Protection</text><text class="bt" x="1021" y="310" text-anchor="middle" style="font-size:12px">Services</text>
+            <rect class="blk" x="842" y="330" width="114" height="50" rx="8"/>
+            <text class="bt" x="899" y="351" text-anchor="middle" style="font-size:12px">Recovery Point</text><text class="bt" x="899" y="368" text-anchor="middle" style="font-size:12px">Inventory</text>
+            <rect class="blk" x="964" y="330" width="114" height="50" rx="8"/>
+            <text class="bt" x="1021" y="351" text-anchor="middle" style="font-size:12px">Data Protection</text><text class="bt" x="1021" y="368" text-anchor="middle" style="font-size:12px">UI</text>
+          </g>
+          <text class="ns" x="960" y="402" text-anchor="middle">Vaulted snapshot backups</text>
+          <use class="drv vdrv" href="#i-drv" x="877" y="410" width="34" height="44"/><use class="lk" href="#i-lock" x="886" y="426" width="16" height="16"/>
+          <use class="drv vdrv" href="#i-drv" x="921" y="410" width="34" height="44"/><use class="lk" href="#i-lock" x="930" y="426" width="16" height="16"/>
+          <use class="drv vdrv" href="#i-drv" x="965" y="410" width="34" height="44"/><use class="lk" href="#i-lock" x="974" y="426" width="16" height="16"/>
+          <g class="rp4"><g class="rp4n"><use class="drv vdrv" href="#i-drv" x="1009" y="410" width="34" height="44" style="stroke:#fff"/><use class="lk" href="#i-lock" x="1018" y="426" width="16" height="16"/></g></g>
+          <text class="ns" x="960" y="478" text-anchor="middle">Encrypted and immutable</text>
+          <text class="ns" x="960" y="496" text-anchor="middle">Locked by retention policy</text>
+        </g>
+        <text class="pvmsg" x="960" y="305" text-anchor="middle">No recovery points</text>
+        <text class="pvmsg" x="960" y="329" text-anchor="middle" style="font-size:14px;font-weight:400">visible from production</text>
+        <g class="safe"><use href="#i-shield" x="868" y="534" width="22" height="22" fill="#05CC93"/><text x="900" y="552">Unaffected</text></g>
+
+        <!-- recovery flows outward from the vault -->
+        <path class="arr cmd a-rec" d="M1090,232H1177" marker-end="url(#arwb)"/>
+        <text class="pl2 cm a-rec" x="1127" y="214" text-anchor="middle" style="font-size:10px">Mount iSCSI</text>
+        <text class="pl2 cm a-rec" x="1127" y="226" text-anchor="middle" style="font-size:10px">Power on VM</text>
+        <path class="arr dat a-rec" d="M1090,342H1177" marker-end="url(#arwg)"/>
+        <text class="pl2 a-rec" x="1127" y="324" text-anchor="middle" style="font-size:10px">Restore</text>
+        <text class="pl2 a-rec" x="1127" y="336" text-anchor="middle" style="font-size:10px">volumes</text>
+        <path class="wire d" d="M1165,455H1092" marker-end="url(#arw)"/>
+        <text class="cp" x="1128" y="436" text-anchor="middle" style="font-size:11px">Vault</text><text class="cp" x="1128" y="449" text-anchor="middle" style="font-size:11px">management</text>
+
+        <g class="node nopt" id="n-ire2">
+          <rect x="1165" y="150" width="200" height="252" rx="14"/>
+          <text class="nt" x="1265" y="172" text-anchor="middle" style="font-size:14px">Secure IRE (optional)</text>
+        </g>
+        <g class="node" id="n-siem">
+          <rect x="1177" y="186" width="176" height="98" rx="10"/>
+          <text class="nt" x="1265" y="206" text-anchor="middle" style="font-size:14px">Recovery hosts</text>
+          <text class="ns restw" x="1265" y="225" text-anchor="middle" style="font-size:12px">Awaiting recovery</text>
+          <text class="nv restl" x="1265" y="225" text-anchor="middle" style="font-size:13px">VM powered on</text>
+          <use class="srv" href="#i-srv" x="1220" y="238" width="22" height="32"/><use class="srv" href="#i-srv" x="1254" y="238" width="22" height="32"/><use class="srv" href="#i-srv" x="1288" y="238" width="22" height="32"/>
+        </g>
+        <g class="node" id="n-b1">
+          <rect x="1177" y="294" width="176" height="96" rx="10"/>
+          <text class="nt" x="1265" y="316" text-anchor="middle" style="font-size:14px">HPE B10000</text>
+          <text class="ns" x="1265" y="338" text-anchor="middle" style="font-size:12px">Restore and validation</text>
+          <text class="ns restw" x="1265" y="364" text-anchor="middle" style="font-size:12px">Standing by</text>
+          <text class="nv restl" x="1265" y="364" text-anchor="middle" style="font-size:13px">Volumes restored</text>
+        </g>
+      </g>
+
+      <g class="node" id="n-mgmt">
+        <rect x="1165" y="415" width="200" height="100" rx="14"/>
+        <use class="lk" href="#i-lock" x="1178" y="430" width="22" height="22"/>
+        <text class="nt" x="1208" y="447" style="font-size:14px">Management station</text>
+        <text class="ns" x="1265" y="478" text-anchor="middle">Vault credentials only</text>
+        <text class="denied" x="1265" y="502" text-anchor="middle">Access denied</text>
+      </g>
+
+      <!-- flows -->
+      <g class="flow f-wr m-bk" id="f-wr"></g>
+      <g class="flow c f-pc m-bk" id="f-pc"></g>
+      <g class="flow f-pd m-bk" id="f-pd"></g>
+      <g class="flow a f-atk" id="f-atk"></g>
+      <g class="flow f-imp m-bk" id="f-imp"></g>
+      <g class="flow f-rst m-bk" id="f-rst"></g>
+      <g class="flow f-ah m-ar" id="f-ah"></g>
+    </svg>
+    <div class="tag">Illustrative architecture</div>
+    <div class="fn" id="fn" hidden>* SimpliVity backups to StoreOnce cyber vault will only be supported through DER at launch.</div>
+  </div>
+
+  <div class="cap">
+    <div aria-live="polite">
+      <div class="kick" id="kick"></div>
+      <h2 id="title"></h2>
+      <p id="text"></p>
+      <p class="note" id="talk" hidden></p>
+      <div class="views" id="views"><span class="lbl">View as</span>
+        <div class="seg"><button id="vv" class="on">Vault operator</button><button id="vp">Production admin</button></div></div>
+    </div>
+    <div class="actions">
+      <button class="cta" id="cta"></button>
+      <div class="row2"><button class="ghost" id="back">Back</button><button class="ghost" id="reset">Restart</button></div>
+    </div>
+  </div>
+  <footer>Illustrative architecture. Counts, timing and retention are placeholders and vary by deployment. Keys: Right arrow or Enter advances, Left arrow goes back, R restarts, N toggles notes.</footer>
+</div>
+
+<script>
+const VND={Zerto:['API','Extended Journal Copy'],Commvault:['Client',''],Veeam:['Client',''],Cohesity:['Client','']};
+const ARRS=['B10000 direct','B10000 via StoreOnce','SimpliVity PC1000'];
+const ARMAP={'B10000 direct':'ar','B10000 via StoreOnce':'oh','SimpliVity PC1000':'sv'};
+const JR=v=>v==='Commvault'||v==='Cohesity'; // journal catalog recovery (Veeam backups are self-describing; Zerto unchanged)
+let mode='bk', arr='B10000 direct', vendor='Zerto', cur=0, view='vault', notes=false, autoT=null;
+const $=id=>document.getElementById(id), stage=$('stage'), NS='http://www.w3.org/2000/svg';
+let T=[]; const later=(f,ms)=>T.push(setTimeout(f,ms)); const clearT=()=>{T.forEach(clearTimeout);T=[]};
+const S={link:'Closed',linkK:'idle',prod:'Healthy',prodK:'',enc:0,blk:0,rp:3,rec:'Standby',recK:'idle',bar:0,barMsg:'Next window: scheduled'};
+
+const P=[
+ {nm:'Protect',title:'Business as usual',cta:'Open the transfer window',
+  text:v=>`${v} writes backups through Catalyst to the production StoreOnce. This is the protection most customers already have, and it is exactly what ransomware goes after.`+(v==='Zerto'?' With Zerto, Extended Journal Copy streams data from the recovery site over the Catalyst API.':'')+(JR(v)?' The production StoreOnce also copies the journal into the Catalyst store.':''),
+  talk:'Set the scene: production is healthy, backups are running. Nothing here is new yet.',
+  st:{link:'closed',prod:'ok',flow:'wr',rp4:0,imp:0,rec:0}},
+ {nm:'Pull',title:'The vault pulls its own copy',cta:'Close the window',
+  text:v=>`On schedule, the vault opens the connection outward and pulls selected Catalyst stores${JR(v)?', along with the journal catalog from the production StoreOnce':''}. StoreOnce iptables rules form the logical air gap, and only ports 9387 and 9388 open, on dedicated switches. ${v} has no idea it is happening.`,
+  talk:'Stress the direction: the vault reaches out. Production never pushes into it.',
+  st:{link:'open',prod:'ok',flow:'wr pc pd',rp4:0,imp:0,rec:0}},
+ {nm:'Seal',title:'Window closed. Vault sealed.',cta:'Launch the ransomware attack',red:1,
+  text:v=>`The port is disabled and the link closes, at most once every 24 hours. Copies in the vault are encrypted, immutable and locked by retention policy. Production cannot see which recovery points exist. There are no vault credentials in production, and StoreOnce controls access.`,
+  talk:'Use the view toggle: switch to Production admin to show there are no recovery points to find.',
+  st:{link:'closed',prod:'ok',flow:'wr',rp4:1,imp:0,rec:0}},
+ {nm:'Attack',title:'Ransomware hits production',cta:'Check on the vault',red:1,
+  text:v=>`Ransomware compromises the application hosts and ${v}, then encrypts production storage and the production StoreOnce. Production is down. The vault is untouched: the link is closed, and the compromised environment has no way to find it.`,
+  talk:'Let the encrypted counter climb before moving on. Then ask: can the attacker reach the vault?',
+  st:{link:'closed',prod:'infected',flow:'',rp4:1,imp:0,rec:0}},
+ {nm:'Out of reach',title:'The vault stays out of reach',cta:'Recover in isolation',red:1,
+  text:v=>`The compromised production environment does not know the vault exists, so nothing in it will try to start a transfer or breach the vault. The vault opens the link on its own schedule, and right now the link is closed. The management station accepts only vault credentials from inside the vault.`,
+  talk:'Make the point: the attacker has nothing to target. The transfer window is the only time the link opens, and the vault is the one that opens it.',
+  st:{link:'closed',prod:'infected',flow:'',rp4:1,imp:0,rec:0}},
+ {nm:'Recover',title:'Recover in isolation',cta:'Replay the demo',
+  text:v=>JR(v)
+   ?`The vault already holds the journal catalog pulled from the production StoreOnce. ${v} in the Secure IRE (optional) restores workloads based on it. Recovery steps vary by organization, so this is shown generically.`
+   :`${v} in the Secure IRE (optional) imports the catalogue from the vault and restores workloads there. Recovery steps vary by organization, so this is shown generically.`,
+  talk:'Close on this: recovery starts from a copy the attacker never touched, in an environment the attacker never reached.',
+  st:{link:'closed',prod:'infected',flow:'imp',rp4:1,imp:1,rec:0}}
+];
+
+/* direct-from-array overrides: same phases, different story on the production side */
+const FA=['ah','ah pull','ah','','','rec'];
+/* B10000 direct: vault-initiated pull, no Catalyst ports, no port-window imagery */
+const AR={
+ 0:()=>`Application hosts run on HPE B10000, which takes snapshots and keeps an inventory of its recovery points. No backup software is in this path. A second valid topology goes through a production StoreOnce; choose "B10000 via StoreOnce" to see it. Everything here sits in production, which is what ransomware goes after.`,
+ 1:()=>`The vault initiates the pull. Its Data Mover, a Catalyst client, reads from B10000 over iSCSI on port 3260, and commands go from the vault to B10000 over REST/HTTPS 443 and volume mount. Idle, StoreOnce iptables rules form the logical air gap, and the Catalyst ports stay closed.`,
+ 2:()=>`The recovery copy is now separated and controlled. Vaulted snapshot backups are encrypted, immutable and locked by retention policy. There are no vault credentials in production, production cannot see which recovery points exist, and StoreOnce controls access.`,
+ 3:()=>`Ransomware compromises the application hosts and encrypts B10000, including its local snapshots. Production is down. The vault is untouched: access stays closed by iptables, and the compromised environment has no way to find it.`,
+ 4:()=>`The compromised production environment does not know the vault exists, so nothing in it will try to start a pull or breach the vault. The vault only reaches out on its own schedule, and right now access is closed. The management station accepts only vault credentials from inside the vault.`,
+ 5:()=>`From the vault UI or approved automation, recovery flows outward from the vault. Backups mount over iSCSI to recovery hosts, and a whole VM can be brought up and powered on in the Secure IRE (optional). An optional B10000 can take restored volumes for fuller recovery and testing. After validation, the vault can restore directly to the cleaned or rebuilt production B10000 without opening a port.`
+};
+const ARX={0:{cta:'Start the vault pull'},1:{cta:'Complete the pull'},2:{title:'Recovery copy separated and controlled'}};
+/* SimpliVity PC1000: production StoreOnce is the intermediate target (Catalyst 9387/9388) */
+const SV={
+ 0:()=>`Production workloads run on SimpliVity PC1000. Its integrated data protection backs up through a Catalyst client to a production StoreOnce. This is the protection customers already rely on, and exactly what ransomware goes after.`,
+ 1:()=>`Production StoreOnce systems are registered on the vault. On schedule, the vault opens the connection outward and pulls the SimpliVity backups: Catalyst commands on port 9387 and data on port 9388, behind StoreOnce iptables rules that form the logical air gap.`,
+ 3:()=>`Ransomware encrypts SimpliVity PC1000 and the production StoreOnce. Production is down. The vault is untouched: the link is closed, and the compromised environment has no way to find it.`,
+ 5:()=>`Recovery follows the approved SimpliVity PC1000 workflow, into an alternate SimpliVity system in the Secure IRE (optional). Recovery steps vary by organization, so this is shown generically.`
+};
+/* B10000 via production StoreOnce (one-hop) */
+const OH={
+ 0:()=>`Application hosts run on HPE B10000, which protects to a production StoreOnce. This one-hop topology is one of two valid B10000 options; the other pulls straight from B10000 into the vault. Everything here sits in production, which is what ransomware goes after.`,
+ 1:()=>`Production StoreOnce is registered on the vault. On schedule, the vault opens the connection outward and pulls the protected copy: Catalyst commands on port 9387 and data on port 9388, behind StoreOnce iptables rules that form the logical air gap.`,
+ 3:()=>`Ransomware compromises the application hosts, then encrypts B10000 and the production StoreOnce. Production is down. The vault is untouched: the link is closed, and the compromised environment has no way to find it.`,
+ 5:()=>`Recovery runs from the vault into the Secure IRE (optional), with an optional B10000 as the restore destination for fuller recovery and testing. Recovery steps vary by organization, so this is shown generically.`
+};
+const TK={
+ ar:{0:'Set the scene: production is healthy and B10000 is taking snapshots. Point out that there is no backup software in this path, and that a one-hop topology through StoreOnce is also valid.',
+     1:'Point at the arrows: data moves from B10000 into the vault. They sit at the vault edge because the vault initiates and controls the pull.',
+     5:'Recovery starts from the vault UI and flows outward. The return to production is a direct restore to the cleaned or rebuilt B10000.'},
+ sv:{5:'The path back to production for a SimpliVity recovery is not shown. Confirm the ISV workflow before stating it.'},
+ oh:{0:'Say plainly that two B10000 topologies are valid. Keep the story simple.'}
+};
+const ART={};
+
+/* flows */
+function dots(g,path,n,dur){for(let i=0;i<n;i++){const c=document.createElementNS(NS,'circle');c.setAttribute('r','5');
+  const a=document.createElementNS(NS,'animateMotion');a.setAttribute('dur',dur+'s');a.setAttribute('repeatCount','indefinite');a.setAttribute('begin',-(dur/n)*i+'s');
+  const m=document.createElementNS(NS,'mpath');m.setAttribute('href','#'+path);a.appendChild(m);c.appendChild(a);g.appendChild(c);}}
+dots($('f-wr'),'p-wc',3,1.8);dots($('f-wr'),'p-wd',3,1.8);dots($('f-pc'),'p-pc',3,2.4);dots($('f-pd'),'p-pd',5,2.4);
+dots($('f-atk'),'p-atk',4,1.1);dots($('f-imp'),'p-imp',4,2.2);dots($('f-rst'),'p-rst',3,1.2);
+dots($('f-ah'),'p-ah',2,1.2);
+
+/* controls */
+function seg(id,names,active,sel,fn){const b=$(id);b.innerHTML='';names.forEach(k=>{const x=document.createElement('button');x.textContent=k;x.className=(active&&k===sel)?'on':'';x.onclick=()=>fn(k);b.appendChild(x);});}
+function buildVendors(){seg('vendors',Object.keys(VND),mode==='bk',vendor,k=>pick('bk',k));seg('arrays',ARRS,mode!=='bk',arr,k=>pick('ar',k));}
+function pick(kind,k){if(kind==='bk'){vendor=k;mode='bk';}else{arr=k;mode=ARMAP[k];}buildVendors();go(cur);}
+function buildTrack(){const t=$('track');t.innerHTML='';P.forEach((p,i)=>{const b=document.createElement('button');b.innerHTML='<i></i>'+p.nm;b.onclick=()=>{stopAuto();go(i)};t.appendChild(b);});}
+function fmt(n){return Math.round(n).toLocaleString('en-US')}
+function tween(from,to,ms,fn){const t0=performance.now();function step(t){const k=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-k,3);fn(from+(to-from)*e);if(k<1)T.push(requestAnimationFrame(step));}T.push(requestAnimationFrame(step));}
+
+function rail(){
+  const cell=(k,v,s,cls,extra='')=>`<div class="${cls||''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div>${extra}</div>`;
+  $('rail').innerHTML=
+   cell(mode==='ar'?'Vault access':'Transfer link',S.link,S.barMsg,S.linkK,`<div class="bar"><b id="barfill" style="width:${S.bar}%"></b></div>`)+
+   cell('Production',S.prod,mode==='ar'?'Hosts and array snapshots':'Applications and backups',S.prodK)+
+   cell('Files encrypted',fmt(S.enc),'Illustrative count',S.enc>0?'bad':'idle')+
+   cell('Inbound connections',0,'Into the vault',cur>=3?'':'idle')+
+   cell('Vault',S.rp>0?'Protected':'-',`${S.rp} recovery points locked`,'')+
+   cell('Recovery',S.rec,S.recSub||'Isolated Recovery Environment (IRE)',S.recK);
+}
+function draw(){
+  const p=P[cur], m=mode, b=m==='bk', ov=(m==='ar'?ARX[cur]:null)||{};
+  $('t-bu').textContent=m==='sv'?'SimpliVity PC1000*':(m==='oh'?'HPE B10000':'Backup software');
+  $('v-bu').textContent=m==='sv'?'Morpheus IDP':(m==='oh'?'Snapshots':vendor);$('v-bu').style.fontSize=m==='sv'?'15px':'';
+  $('cc1').textContent=m==='oh'?'Data protection':'Catalyst';$('cc1').style.fontSize=m==='oh'?'14px':'';
+  $('cc2').textContent=m==='oh'?'services':(m==='sv'?'Client':VND[vendor][0]);$('cc2').style.fontSize=m==='oh'?'14px':'';
+  $('cc-sub').textContent=b?VND[vendor][1]:'';
+  $('t-sire').textContent=m==='sv'?'SimpliVity PC1000':(m==='oh'?'HPE B10000':'Backup software');
+  $('v-sire').textContent=m==='sv'?'Catalyst client':(m==='oh'?'Restore target':vendor);
+  $('st-bu').textContent=b?'COMPROMISED':'ENCRYPTED';
+  $('kick').textContent=`Phase ${cur+1} of ${P.length}: ${p.nm}`;
+  $('v-arr').textContent='HPE B10000';
+  $('fn').hidden=!(m==='sv');
+  stage.dataset.jrnl=(b&&JR(vendor))?'1':'0';
+  $('imp-lbl').textContent=m==='sv'?'Approved workflow':(m==='oh'?'Restore volumes':(JR(vendor)?'Journal catalog':'Import catalogue'));
+  const X={ar:AR,sv:SV,oh:OH}[m], t=X&&X[cur];
+  $('title').textContent=ov.title||p.title;$('text').textContent=t?t():p.text(vendor);
+  const tk=TK[m]&&TK[m][cur];$('talk').textContent=tk||p.talk;$('talk').hidden=!notes;
+  const c=$('cta');c.textContent=ov.cta||p.cta;c.className='cta'+(p.red?' red':'');
+  $('back').disabled=cur===0;
+  $('views').style.display=cur===2?'flex':'none';
+  [...$('track').children].forEach((b,i)=>{b.className=(i<cur?'done':'')+(i===cur?' on':'')+(i===cur&&i>=3&&i<=4?' red':'');});
+  rail();
+}
+function setView(v){view=v;stage.dataset.view=v;$('vv').className=v==='vault'?'on':'';$('vp').className=v==='prod'?'on':'';}
+function ripple(){const r=$('rip');r.classList.remove('go');void r.getBoundingClientRect();r.classList.add('go');stage.dataset.fw='hit';later(()=>{stage.dataset.fw=''},700);}
+
+function go(i,fresh){
+  clearT();const fwd=i>cur;cur=Math.max(0,Math.min(P.length-1,i));const p=P[cur];
+  stage.dataset.mode=mode;stage.dataset.build=(mode==='ar'&&cur===0)?'0':'1';
+  stage.dataset.link=p.st.link;stage.dataset.prod=p.st.prod;stage.dataset.flow=mode==='ar'?FA[cur]:p.st.flow;stage.dataset.rp4=p.st.rp4;
+  stage.dataset.imp=p.st.imp;stage.dataset.rec=p.st.rec;stage.dataset.mgmt='sealed';stage.dataset.fw='';stage.dataset.atk=cur===4?'on':'off';
+  $('p-atk').setAttribute('opacity','0');
+  setView('vault');
+  // baseline telemetry for this phase
+  S.link=mode==='ar'?(cur===1?'Pulling':'Idle'):(p.st.link==='open'?'Open':'Closed');S.linkK=(mode==='ar'?cur===1:p.st.link==='open')?'warn':'idle';
+  S.prod=cur>=3?'Compromised':'Healthy';S.prodK=cur>=3?'bad':'';
+  S.enc=cur>=3&&!(fwd&&cur===3)?48213:0;
+  S.blk=cur>=5?3:(cur===4?0:0);
+  S.rp=p.st.rp4?4:3;
+  S.rec=cur===5?(mode==='ar'?'Recovering':'Importing'):'Standby';S.recK=cur===5?'warn':'idle';S.recSub='Isolated Recovery Environment (IRE)';
+  S.bar=cur===1?0:0;S.barMsg=cur===1?'Window open, pulling':'Next window: scheduled';
+  if(cur===2) {S.barMsg='Closed after transfer';}
+  if(cur>=2&&cur<=5&&cur!==1)S.barMsg='Link closed';
+  if(mode==='ar')S.barMsg=cur===1?'Vault pulls from B10000':'Idle: closed by iptables';
+  draw();
+  // timed sequences
+  if(cur===1){
+    requestAnimationFrame(()=>{const b=$('barfill');if(b){b.style.transition='width 6s linear';b.style.width='100%';}});
+    later(()=>{S.barMsg='Transfer complete';S.bar=100;const k=document.querySelector('#rail>div:first-child .s');if(k)k.textContent='Transfer complete';},6000);
+  }
+  if(cur===3){
+    S.prod='Under attack';S.prodK='bad';rail();
+    tween(0,48213,3600,v=>{S.enc=v;const e=document.querySelectorAll('#rail .v')[2];if(e)e.textContent=fmt(v);
+      document.querySelectorAll('#rail>div')[2].className='bad';});
+    later(()=>{S.prod='Compromised';rail();},3600);
+  }
+  if(cur===4){S.enc=48213;rail();}
+  if(cur===5){
+    if(mode!=='ar') later(()=>{stage.dataset.flow='imp rst';S.rec='Restoring';rail();},2400);
+    later(()=>{stage.dataset.rec='1';S.recK='';
+      if(mode==='ar'){S.rec='Recovered';S.recSub='VM and B10000 in the IRE';stage.dataset.flow='rec back';}
+      else{S.rec='Restored';S.recSub='Workloads restored in the Secure IRE';}
+      rail();},4600);
+  }
+}
+function bump(n){S.blk=n;rail();}
+
+$('cta').onclick=()=>{stopAuto();cur===P.length-1?go(0):go(cur+1)};
+$('back').onclick=()=>{stopAuto();go(cur-1)};$('reset').onclick=()=>{stopAuto();go(0)};
+$('vv').onclick=()=>setView('vault');$('vp').onclick=()=>setView('prod');
+$('notes').onclick=()=>{notes=!notes;$('notes').className='link'+(notes?' on':'');$('talk').hidden=!notes;};
+function stopAuto(){if(autoT){clearInterval(autoT);autoT=null;$('auto').className='link';$('auto').textContent='Auto-play';}}
+$('auto').onclick=()=>{if(autoT){stopAuto();return;}$('auto').className='link on';$('auto').textContent='Pause auto-play';if(cur===P.length-1)go(0);
+  autoT=setInterval(()=>{if(cur>=P.length-1){stopAuto();return;}go(cur+1);},9500);};
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='ArrowRight'||e.key==='Enter'){stopAuto();cur===P.length-1?go(0):go(cur+1)}
+  else if(e.key==='ArrowLeft'){stopAuto();go(cur-1)}
+  else if(e.key==='r'||e.key==='R'){stopAuto();go(0)}
+  else if(e.key==='n'||e.key==='N'){$('notes').click()}
+});
+buildVendors();buildTrack();go(0);
+</script>
+</body>
+</html>
